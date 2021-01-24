@@ -5,6 +5,8 @@ import pytest
 import re
 
 
+
+
 def remove_prefix(input_str: str) -> str:
     result = re.sub(r"^\d+-", "", input_str)
     return result
