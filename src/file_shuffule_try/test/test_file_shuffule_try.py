@@ -21,19 +21,15 @@ def create_file_names(files: Iterable[str], numbers: Iterable[int]) -> Iterable[
 
     for file, number in inputs:
         file_wo_prefix = remove_prefix(file)
-        yield str(number).zfill(num_letters) + "-" + file_wo_prefix
+        new_filename = str(number).zfill(num_letters) + "-" + file_wo_prefix
+        yield new_filename, file
 
-
-def test_shuffle_one_file() -> None:
-    result_file_names = create_file_names(["name"], [1])
-
-    assert list(result_file_names) == ["1-name"]
 
 
 def test_shuffle_two_files() -> None:
     result_file_names = create_file_names(["name1", "name2"], [1, 2])
 
-    assert set(result_file_names) == {"1-name1", "2-name2"}
+    assert set(result_file_names) == {("1-name1", "name1"), ("2-name2", "name2")}
 
 
 def test_shuffle_10_files() -> None:
@@ -42,18 +38,21 @@ def test_shuffle_10_files() -> None:
     numbers = range(1, len(files) + 1)
     result_file_names = list(create_file_names(files, numbers))
 
-    assert "01-name1" in result_file_names
-    assert "03-name3" in result_file_names
+    assert any(new_file == "01-name1" for new_file, org_file in result_file_names)
+    assert any(new_file == "03-name3" for new_file, org_file in result_file_names)
 
 
 def test_shuffle_10_files_reshuffle() -> None:
-    files = [str(i + 1).zfill(2) + "-" + "name" + str(i + 1) for i in range(10)]
+    num_files = 10
+    files = [str(num_files - i).zfill(2) + "-" + "name" + str(i + 1) for i in range(num_files)]
+    assert "10-name1" in files
+    assert "08-name3" in files
 
     numbers = range(1, len(files) + 1)
     result_file_names = list(create_file_names(files, numbers))
 
-    assert "01-name1" in result_file_names
-    assert "03-name3" in result_file_names
+    assert any(new_file == "01-name1" for new_file, org_file in result_file_names)
+    assert any(new_file == "03-name3" for new_file, org_file in result_file_names)
 
 
 remove_prefix_test_data = [
@@ -81,21 +80,19 @@ def test_add_prefix_to_the_real_file():
     try:
         os.mkdir(test_folder_path)
         os.chdir(test_folder_path)
-        print(os.getcwd())
 
-        open("test_file1.txt", "a").close()
+        # Create an empty file
+        orig_file_names = ["test_file1.txt", "test_file2.txt"]
+        for s in orig_file_names:
+            open(s, "a").close()
 
-        result_filenames = create_file_names(["test_file1.txt"], [1])
-
-        os.rename("test_file1.txt", list(result_filenames)[0])
+        file_name_tuples = create_file_names(orig_file_names, range(1, len(orig_file_names) + 1))
+        for new_file_name, orig_file_name in file_name_tuples:
+            os.rename(orig_file_name, new_file_name)
 
         files_in_folder = list(glob.glob("./*"))
 
         assert any("1-test_file1.txt" in s for s in files_in_folder)
-
-        for n in files_in_folder:
-            print(n)
-
 
     finally:
         print(folder_to_return)
