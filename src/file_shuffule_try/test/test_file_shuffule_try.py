@@ -2,26 +2,23 @@ from file_shuffule_try.file_shuffule_try import fib
 from typing import Iterable
 from math import log10
 import pytest
+import re
 
 
-def test_fib() -> None:
-    assert fib(0) == 0
-    assert fib(1) == 1
-    assert fib(2) == 1
-    assert fib(3) == 2
-    assert fib(4) == 3
-    assert fib(5) == 5
-    assert fib(10) == 55
+def remove_prefix(input_str: str) -> str:
+    result = re.sub(r"^\d+-", "", input_str)
+    return result
 
 
 def create_file_names(files: Iterable[str], numbers: Iterable[int]) -> Iterable[str]:
     inputs = list(zip(files, numbers))
 
-    numInputs = len(inputs)
-    numLetters = int(log10(numInputs) + 1)
+    num_inputs = len(inputs)
+    num_letters = int(log10(num_inputs) + 1)
 
     for file, number in inputs:
-        yield str(number).zfill(numLetters) + "-" + file
+        file_wo_prefix = remove_prefix(file)
+        yield str(number).zfill(num_letters) + "-" + file_wo_prefix
 
 
 def test_shuffle_one_file() -> None:
@@ -40,38 +37,34 @@ def test_shuffle_10_files() -> None:
     files = ["name" + str(i + 1) for i in range(10)]
 
     numbers = range(1, len(files) + 1)
-    result_file_names = create_file_names(files, numbers)
+    result_file_names = list(create_file_names(files, numbers))
 
     assert "01-name1" in result_file_names
     assert "03-name3" in result_file_names
 
 
-# def test_shuffle_files_with_shuffle_prefix() -> None:
+def test_shuffle_10_files_reshuffle() -> None:
+    files = [str(i+1).zfill(2) + "-" + "name" + str(i + 1) for i in range(10)]
 
-#     num_files = 10
-#     files = [str(num_files-i).zfill(2) + "-" + "name" + str(i+1) for i in range(num_files)]
+    numbers = range(1, len(files) + 1)
+    result_file_names = list(create_file_names(files, numbers))
 
-#     numbers = range(1, len(files)+1)
-#     result_file_names = create_file_names(files, numbers)
-#     print("-------------ABC----")
-
-#     assert "01-name1" in result_file_names
-#     assert "03-name3" in result_file_names
-
-def remove_prefix(input: str):
-    return "file_name"
+    assert "01-name1" in result_file_names
+    assert "03-name3" in result_file_names
 
 
-test_data = [
+
+
+remove_prefix_test_data = [
     ("02-file_name", "file_name"),
-    ("002-my_file", "my_file")
+    ("002-my_file", "my_file"),
+    ("my_002-file", "my_002-file"),
+    ("no_prefix_file", "no_prefix_file"),
 ]
 
 
-@pytest.mark.parametrize("input, expected", test_data, ids=["1", "2"])
-def test_remove_prefix_parameterized(input, expected):
-    result = remove_prefix(input)
+@pytest.mark.parametrize("input_str, expected", remove_prefix_test_data)
+def test_remove_prefix_parameterized(input_str: str, expected: str) -> None:
+    result = remove_prefix(input_str)
 
     assert result == expected
-
-
