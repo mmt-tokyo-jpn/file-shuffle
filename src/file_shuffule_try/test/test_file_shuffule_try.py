@@ -17,19 +17,25 @@ def create_file_names(files: Iterable[str], numbers: Iterable[int]) -> Iterable[
     inputs = list(zip(files, numbers))
 
     num_inputs = len(inputs)
+    if num_inputs == 0:  # no elements.
+        return
+
     num_letters = int(log10(num_inputs) + 1)
 
-    for file, number in inputs:
+    for file_path, number in inputs:
+        split_file_path = os.path.split(file_path)
+        file = split_file_path[-1]
+        dir_name = os.path.dirname(file_path)
         file_wo_prefix = remove_prefix(file)
         new_filename = str(number).zfill(num_letters) + "-" + file_wo_prefix
-        yield new_filename, file
-
+        new_path = os.path.join(dir_name, new_filename)
+        yield new_path, file
 
 
 def test_shuffle_two_files() -> None:
-    result_file_names = create_file_names(["name1", "name2"], [1, 2])
+    result_file_names = create_file_names(["name1.txt", "name2"], [1, 2])
 
-    assert set(result_file_names) == {("1-name1", "name1"), ("2-name2", "name2")}
+    assert set(result_file_names) == {("1-name1.txt", "name1.txt"), ("2-name2", "name2")}
 
 
 def test_shuffle_10_files() -> None:
@@ -69,7 +75,6 @@ def test_remove_prefix_parameterized(input_str: str, expected: str) -> None:
 
     assert result == expected
 
-
 def test_add_prefix_to_the_real_file():
     test_folder = "test_folder"
     assert not os.path.exists(test_folder)
@@ -82,17 +87,21 @@ def test_add_prefix_to_the_real_file():
         os.chdir(test_folder_path)
 
         # Create an empty file
-        orig_file_names = ["test_file1.txt", "test_file2.txt"]
-        for s in orig_file_names:
+        files_to_create = ["test_file1.txt", "test_file2.txt"]
+        for s in files_to_create:
             open(s, "a").close()
 
-        file_name_tuples = create_file_names(orig_file_names, range(1, len(orig_file_names) + 1))
+        folder_path = "."
+        glob_path = os.path.join(folder_path, "*")
+        files_in_folder1 = list(glob.glob(glob_path))
+
+        file_name_tuples = create_file_names(files_in_folder1, range(1, len(files_in_folder1) + 1))
         for new_file_name, orig_file_name in file_name_tuples:
             os.rename(orig_file_name, new_file_name)
 
-        files_in_folder = list(glob.glob("./*"))
+        files_in_folder2 = list(glob.glob("./*"))
 
-        assert any("1-test_file1.txt" in s for s in files_in_folder)
+        assert any("1-test_file1.txt" in s for s in files_in_folder2)
 
     finally:
         print(folder_to_return)
